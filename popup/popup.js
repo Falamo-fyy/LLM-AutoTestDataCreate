@@ -132,9 +132,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // === 事件绑定 ===
 
+  function setScanning(scanning) {
+    elements.scanBtn.disabled = scanning;
+    elements.fillBtn.disabled = scanning;
+    elements.clearBtn.disabled = scanning;
+    elements.settingsBtn.disabled = scanning;
+    if (scanning) {
+      elements.scanBtn.innerHTML = `${ICONS.refresh} 扫描中...`;
+    } else {
+      elements.scanBtn.innerHTML = `${ICONS.refresh} 扫描页面`;
+      // Re-enable fill/clear only if fields were found
+      if (currentFields.length === 0) {
+        elements.fillBtn.disabled = true;
+        elements.clearBtn.disabled = true;
+      }
+    }
+  }
+
   elements.scanBtn.addEventListener('click', async () => {
-    elements.scanBtn.disabled = true;
-    elements.scanBtn.innerHTML = `${ICONS.refresh} 扫描中...`;
+    setScanning(true);
 
     const response = await sendTabMessage({ action: 'scan-fields' });
     if (response?.success) {
@@ -184,8 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('未检测到表单字段', 'error');
     }
 
-    elements.scanBtn.disabled = false;
-    elements.scanBtn.innerHTML = `${ICONS.refresh} 扫描页面`;
+    setScanning(false);
   });
 
   elements.fillBtn.addEventListener('click', async () => {
