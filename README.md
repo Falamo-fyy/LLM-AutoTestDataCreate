@@ -45,6 +45,7 @@ npm run build
 3. 启用 AI 分析
 4. 选择提供商（Anthropic / OpenAI）
 5. 填入 API 地址和密钥
+PS:建议使用DeepSeek-v4系列模型，输出稳定性更好。如果AI扫描输出结果不好可以多重试几次。
 
 ### 使用方式
 
