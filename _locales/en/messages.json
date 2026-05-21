@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "AutoData - Form Filler",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Auto-detect and fill web form test data, support Chinese/English and custom rules",
+    "description": "Extension description"
+  }
+}

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoData 测试页面 - 表单填充测试</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      text-align: center;
+      color: #4CAF50;
+      margin-bottom: 30px;
+    }
+    .test-section {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .test-section h2 {
+      color: #333;
+      font-size: 18px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #4CAF50;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: #555;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #4CAF50;
+    }
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .checkbox-group, .radio-group {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .checkbox-group label, .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: normal;
+      cursor: pointer;
+    }
+    .inline-form {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .inline-form label {
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+    .submit-btn {
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      color: white;
+      border: none;
+      padding: 12px 32px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+    }
+    .info {
+      background: #e3f2fd;
+      border-left: 4px solid #2196F3;
+      padding: 12px 16px;
+      margin-top: 20px;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      color: #1565C0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔌 AutoData 表单填充测试页面</h1>
+
+  <!-- 基础表单测试 -->
+  <div class="test-section">
+    <h2>📝 基础表单</h2>
+    <form id="basicForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="firstName">名 (First Name)</label>
+          <input type="text" id="firstName" name="firstName" placeholder="请输入名">
+        </div>
+        <div class="form-group">
+          <label for="lastName">姓 (Last Name)</label>
+          <input type="text" id="lastName" name="lastName" placeholder="请输入姓">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="fullName">姓名 (Full Name)</label>
+        <input type="text" id="fullName" name="name" placeholder="请输入姓名">
+      </div>
+
+      <div class="form-group">
+        <label for="email">邮箱 (Email)</label>
+        <input type="email" id="email" name="email" placeholder="请输入邮箱">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="phone">手机 (Phone)</label>
+          <input type="tel" id="phone" name="phone" placeholder="请输入手机号">
+        </div>
+        <div class="form-group">
+          <label for="age">年龄 (Age)</label>
+          <input type="number" id="age" name="age" placeholder="请输入年龄">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="birthday">出生日期 (Birthday)</label>
+        <input type="date" id="birthday" name="birthday">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="province">省份 (Province)</label>
+          <select id="province" name="province">
+            <option value="">请选择省份</option>
+            <option value="beijing">北京</option>
+            <option value="shanghai">上海</option>
+            <option value="guangdong">广东</option>
+            <option value="zhejiang">浙江</option>
+            <option value="jiangsu">江苏</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="city">城市 (City)</label>
+          <select id="city" name="city">
+            <option value="">请选择城市</option>
+            <option value="beijing">北京市</option>
+            <option value="shanghai">上海市</option>
+            <option value="guangzhou">广州市</option>
+            <option value="shenzhen">深圳市</option>
+            <option value="hangzhou">杭州市</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="address">详细地址 (Address)</label>
+        <input type="text" id="address" name="address" placeholder="请输入详细地址">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="zipcode">邮编 (Zipcode)</label>
+          <input type="text" id="zipcode" name="zipcode" placeholder="请输入邮编">
+        </div>
+        <div class="form-group">
+          <label for="country">国家 (Country)</label>
+          <input type="text" id="country" name="country" placeholder="请输入国家">
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- 账号信息 -->
+  <div class="test-section">
+    <h2>🔐 账号信息</h2>
+    <form id="accountForm">
+      <div class="form-group">
+        <label for="username">用户名 (Username)</label>
+        <input type="text" id="username" name="username" placeholder="请输入用户名">
+      </div>
+
+      <div class="form-group">
+        <label for="password">密码 (Password)</label>
+        <input type="password" id="password" name="password" placeholder="请输入密码">
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">确认密码 (Confirm Password)</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="请再次输入密码">
+      </div>
+
+      <div class="form-group">
+        <label for="accountId">账号ID (Account ID)</label>
+        <input type="text" id="accountId" name="accountId" placeholder="系统自动生成">
+      </div>
+    </form>
+  </div>
+
+  <!-- 公司信息 -->
+  <div class="test-section">
+    <h2>🏢 公司信息</h2>
+    <form id="companyForm">
+      <div class="form-group">
+        <label for="companyName">公司名称 (Company Name)</label>
+        <input type="text" id="companyName" name="companyName" placeholder="请输入公司名称">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="department">部门 (Department)</label>
+          <select id="department" name="department">
+            <option value="">请选择部门</option>
+            <option value="tech">技术部</option>
+            <option value="product">产品部</option>
+            <option value="operation">运营部</option>
+            <option value="sales">销售部</option>
+            <option value="hr">人力资源部</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="position">职位 (Position)</label>
+          <input type="text" id="position" name="position" placeholder="请输入职位">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="salary">期望薪资 (Expected Salary)</label>
+        <input type="number" id="salary" name="salary" placeholder="请输入期望薪资">
+      </div>
+
+      <div class="form-group">
+        <label for="companyUrl">公司网址 (Company URL)</label>
+        <input type="url" id="companyUrl" name="companyUrl" placeholder="https://www.example.com">
+      </div>
+    </form>
+  </div>
+
+  <!-- 其他信息 -->
+  <div class="test-section">
+    <h2>📋 其他信息</h2>
+    <form id="otherForm">
+      <div class="form-group">
+        <label for="idCard">身份证号 (ID Card)</label>
+        <input type="text" id="idCard" name="idCard" placeholder="请输入身份证号">
+      </div>
+
+      <div class="form-group">
+        <label>性别 (Gender)</label>
+        <div class="radio-group">
+          <label><input type="radio" name="gender" value="male"> 男 (Male)</label>
+          <label><input type="radio" name="gender" value="female"> 女 (Female)</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="education">学历 (Education)</label>
+        <select id="education" name="education">
+          <option value="">请选择学历</option>
+          <option value="highschool">高中</option>
+          <option value="college">大专</option>
+          <option value="bachelor">本科</option>
+          <option value="master">硕士</option>
+          <option value="phd">博士</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="description">个人简介 (Description)</label>
+        <textarea id="description" name="description" placeholder="请输入个人简介"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" name="agree" value="yes">
+          我已阅读并同意相关条款 (I agree to the terms)
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" name="subscribe" value="yes">
+          订阅新闻和更新 (Subscribe to newsletter)
+        </label>
+      </div>
+    </form>
+  </div>
+
+  <!-- 提交按钮 -->
+  <div class="test-section" style="text-align: center;">
+    <button type="button" class="submit-btn" onclick="alert('表单提交成功！')">提交表单 (Submit)</button>
+  </div>
+
+  <div class="info">
+    <strong>💡 使用说明：</strong><br>
+    1. 安装 AutoData 扩展后，点击扩展图标<br>
+    2. 点击「扫描页面」按钮识别表单字段<br>
+    3. 选择语言（中文/英文/随机）<br>
+    4. 点击「随机填充」自动填充测试数据<br>
+    5. 可以开启「高亮」功能查看已识别的字段
+  </div>
+</body>
+</html>

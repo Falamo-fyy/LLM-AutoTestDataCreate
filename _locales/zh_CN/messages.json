@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "AutoData - 表单填充器",
+    "description": "扩展名称"
+  },
+  "extDescription": {
+    "message": "自动识别并填充网页表单测试数据，支持中英文、自定义规则",
+    "description": "扩展描述"
+  }
+}

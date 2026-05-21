@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoData - 表单填充器</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 头部 -->
+    <header class="header">
+      <div class="header-title">
+        <span class="header-icon">🔌</span>
+        <span class="header-text">AutoData</span>
+      </div>
+      <button id="settingsBtn" class="icon-btn" title="设置">⚙️</button>
+    </header>
+
+    <!-- 语言选择 -->
+    <div class="language-selector">
+      <label class="lang-option">
+        <input type="radio" name="locale" value="zh_CN" checked>
+        <span class="lang-label">🌐 中文</span>
+      </label>
+      <label class="lang-option">
+        <input type="radio" name="locale" value="en_US">
+        <span class="lang-label">EN English</span>
+      </label>
+      <label class="lang-option">
+        <input type="radio" name="locale" value="random">
+        <span class="lang-label">🎲 随机</span>
+      </label>
+      <label class="ai-toggle" title="AI智能识别">
+        <input type="checkbox" id="aiToggle">
+        <span>🤖 AI</span>
+      </label>
+    </div>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <!-- 扫描状态 -->
+      <div id="scanStatus" class="scan-status">
+        <div class="status-icon">🔍</div>
+        <div class="status-text">点击「扫描页面」检测表单</div>
+      </div>
+
+      <!-- 字段列表 -->
+      <div id="fieldsContainer" class="fields-container hidden">
+        <div class="fields-header">
+          <span class="fields-count">识别到 <strong id="fieldCount">0</strong> 个字段</span>
+          <label class="highlight-toggle">
+            <input type="checkbox" id="highlightToggle">
+            <span>高亮</span>
+          </label>
+        </div>
+        <div id="fieldsList" class="fields-list"></div>
+      </div>
+
+      <!-- 无字段提示 -->
+      <div id="noFields" class="no-fields hidden">
+        <div class="no-fields-icon">📭</div>
+        <div class="no-fields-text">未检测到可填充的表单字段</div>
+      </div>
+    </main>
+
+    <!-- 操作按钮 -->
+    <footer class="footer">
+      <button id="scanBtn" class="btn btn-secondary">
+        <span>🔍</span> 扫描页面
+      </button>
+      <button id="fillBtn" class="btn btn-primary" disabled>
+        <span>🎲</span> 随机填充
+      </button>
+      <button id="applyBtn" class="btn btn-primary hidden">
+        <span>✓</span> 应用
+      </button>
+      <button id="clearBtn" class="btn btn-outline" disabled>
+        <span>🗑️</span> 清空
+      </button>
+    </footer>
+
+    <!-- 设置面板 -->
+    <div id="settingsPanel" class="settings-panel hidden">
+      <div class="settings-header">
+        <h3>⚙️ 设置</h3>
+        <button id="closeSettings" class="icon-btn">✕</button>
+      </div>
+      <div class="settings-content">
+        <!-- AI 设置 -->
+        <div class="settings-section">
+          <h4>🤖 AI 智能识别</h4>
+          <div class="ai-settings">
+            <div class="setting-row">
+              <label>启用 AI</label>
+              <input type="checkbox" id="aiEnabled">
+            </div>
+            <div class="setting-row">
+              <label>API 方式</label>
+              <select id="aiProvider">
+                <option value="anthropic">Anthropic 模式</option>
+                <option value="openai">OpenAI 模式</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label>请求地址</label>
+              <input type="text" id="aiBaseUrl" placeholder="https://api.anthropic.com">
+            </div>
+            <div class="setting-hint">填入 API 服务的域名即可，如 <code>https://api.anthropic.com</code> 或中转服务地址</div>
+            <div class="setting-row">
+              <label>API Key</label>
+              <input type="password" id="apiKey" placeholder="sk-...">
+            </div>
+            <div class="setting-row">
+              <label>模型</label>
+              <input type="text" id="aiModel" placeholder="claude-3-5-haiku-20240620">
+            </div>
+            <button id="testAiBtn" class="btn btn-outline btn-small">测试连接</button>
+            <div id="aiStatus" class="ai-status"></div>
+          </div>
+        </div>
+
+        <!-- 字段映射 -->
+        <div class="settings-section">
+          <h4>📝 字段映射规则</h4>
+          <div class="settings-info">
+            <p>设置字段名到数据类型的映射规则</p>
+            <p class="hint">例如: <code>工号 → uuid</code></p>
+          </div>
+          <div id="mappingsList" class="mappings-list"></div>
+          <div class="add-mapping">
+            <input type="text" id="mappingField" placeholder="字段名">
+            <span>→</span>
+            <select id="mappingType">
+              <option value="name">姓名</option>
+              <option value="email">邮箱</option>
+              <option value="phone">电话</option>
+              <option value="address">地址</option>
+              <option value="company">公司</option>
+              <option value="uuid">UUID</option>
+              <option value="date">日期</option>
+              <option value="select">下拉选项</option>
+              <option value="bankCard">银行卡</option>
+              <option value="idCard">身份证</option>
+            </select>
+            <button id="addMappingBtn" class="btn btn-small">添加</button>
+          </div>
+        </div>
+
+        <div class="settings-actions">
+          <button id="resetBtn" class="btn btn-outline btn-small">恢复默认</button>
+          <button id="closeSettingsBtn" class="btn btn-primary btn-small">完成</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

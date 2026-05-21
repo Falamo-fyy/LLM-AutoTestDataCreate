@@ -1,0 +1,22 @@
+{
+  "name": "autodata-extension",
+  "version": "1.0.0",
+  "description": "Edge浏览器表单自动填充插件，用于网页测试数据生成",
+  "main": "background/service-worker.js",
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "dev": "npm run build"
+  },
+  "keywords": [
+    "browser-extension",
+    "form-fill",
+    "test-data",
+    "faker"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@faker-js/faker": "^8.4.1"
+  }
+}

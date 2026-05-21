@@ -1,0 +1,19 @@
+/* styles/highlight.css - 字段高亮样式 */
+
+.autodata-highlight {
+  outline: 2px solid #4CAF50 !important;
+  outline-offset: 2px !important;
+  background-color: rgba(76, 175, 80, 0.1) !important;
+  transition: all 0.2s ease;
+}
+
+.autodata-highlight:hover {
+  outline-color: #2196F3 !important;
+  background-color: rgba(33, 150, 243, 0.15) !important;
+}
+
+.autodata-highlight:focus {
+  outline-color: #FF9800 !important;
+  outline-width: 3px !important;
+  background-color: rgba(255, 152, 0, 0.15) !important;
+}
