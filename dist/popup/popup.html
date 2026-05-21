@@ -11,29 +11,66 @@
     <!-- 头部 -->
     <header class="header">
       <div class="header-title">
-        <span class="header-icon">🔌</span>
+        <span class="header-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </span>
         <span class="header-text">AutoData</span>
       </div>
-      <button id="settingsBtn" class="icon-btn" title="设置">⚙️</button>
+      <button id="settingsBtn" class="icon-btn" title="设置" aria-label="打开设置">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+        </svg>
+      </button>
     </header>
 
     <!-- 语言选择 -->
     <div class="language-selector">
       <label class="lang-option">
         <input type="radio" name="locale" value="zh_CN" checked>
-        <span class="lang-label">🌐 中文</span>
+        <span class="lang-label">
+          <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          中文
+        </span>
       </label>
       <label class="lang-option">
         <input type="radio" name="locale" value="en_US">
-        <span class="lang-label">EN English</span>
+        <span class="lang-label">
+          <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          English
+        </span>
       </label>
       <label class="lang-option">
         <input type="radio" name="locale" value="random">
-        <span class="lang-label">🎲 随机</span>
+        <span class="lang-label">
+          <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="2" width="8" height="8" rx="1"/>
+            <rect x="14" y="2" width="8" height="8" rx="1"/>
+            <rect x="2" y="14" width="8" height="8" rx="1"/>
+            <rect x="14" y="14" width="8" height="8" rx="1"/>
+          </svg>
+          随机
+        </span>
       </label>
       <label class="ai-toggle" title="AI智能识别">
         <input type="checkbox" id="aiToggle">
-        <span>🤖 AI</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a4 4 0 0 1 4 4c0 1.5-.8 2.8-2 3.4V12h3l4 4v-4h3v4l4-4v-2.6c-1.2-.6-2-1.9-2-3.4a4 4 0 0 1 4-4 4 4 0 0 0-8 0"/>
+          <circle cx="8" cy="14" r="1"/>
+          <circle cx="16" cy="14" r="1"/>
+          <path d="M9 18h6"/>
+        </svg>
+        <span>AI</span>
       </label>
     </div>
 
@@ -41,7 +78,10 @@
     <main class="main-content">
       <!-- 扫描状态 -->
       <div id="scanStatus" class="scan-status">
-        <div class="status-icon">🔍</div>
+        <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+        </svg>
         <div class="status-text">点击「扫描页面」检测表单</div>
       </div>
 
@@ -59,60 +99,119 @@
 
       <!-- 无字段提示 -->
       <div id="noFields" class="no-fields hidden">
-        <div class="no-fields-icon">📭</div>
+        <svg class="no-fields-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
         <div class="no-fields-text">未检测到可填充的表单字段</div>
+      </div>
+
+      <!-- AI 扫描进度 -->
+      <div id="aiProgress" class="ai-progress hidden">
+        <div class="progress-header">
+          <svg class="progress-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            <path d="M12 2a4 4 0 0 1 4 4c0 1.5-.8 2.8-2 3.4V12h3l4 4v-4h3v4l4-4v-2.6c-1.2-.6-2-1.9-2-3.4a4 4 0 0 1 4-4"/>
+          </svg>
+          <span class="progress-title">AI 分析中...</span>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar"></div>
+        </div>
+        <div class="progress-info">
+          <span class="progress-status" id="progressStatus">正在分析字段类型</span>
+        </div>
+        <div class="progress-warning hidden" id="progressWarning">
+          <span class="warning-text">字段较多，请耐心等待...</span>
+          <span class="warning-hint">请不要切换页面或操作浏览器</span>
+        </div>
       </div>
     </main>
 
     <!-- 操作按钮 -->
     <footer class="footer">
       <button id="scanBtn" class="btn btn-secondary">
-        <span>🔍</span> 扫描页面
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+        </svg>
+        扫描页面
       </button>
       <button id="fillBtn" class="btn btn-primary" disabled>
-        <span>🎲</span> 随机填充
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+          <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+        随机填充
       </button>
       <button id="applyBtn" class="btn btn-primary hidden">
-        <span>✓</span> 应用
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        应用
       </button>
       <button id="clearBtn" class="btn btn-outline" disabled>
-        <span>🗑️</span> 清空
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+        清空
       </button>
     </footer>
 
     <!-- 设置面板 -->
     <div id="settingsPanel" class="settings-panel hidden">
       <div class="settings-header">
-        <h3>⚙️ 设置</h3>
-        <button id="closeSettings" class="icon-btn">✕</button>
+        <h3>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+          </svg>
+          设置
+        </h3>
+        <button id="closeSettings" class="icon-btn" aria-label="关闭设置">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
       <div class="settings-content">
         <!-- AI 设置 -->
         <div class="settings-section">
-          <h4>🤖 AI 智能识别</h4>
+          <h4>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a4 4 0 0 1 4 4c0 1.5-.8 2.8-2 3.4V12h3l4 4v-4h3v4l4-4v-2.6c-1.2-.6-2-1.9-2-3.4a4 4 0 0 1 4-4 4 4 0 0 0-8 0"/>
+              <circle cx="8" cy="14" r="1"/>
+              <circle cx="16" cy="14" r="1"/>
+              <path d="M9 18h6"/>
+            </svg>
+            AI 智能识别
+          </h4>
           <div class="ai-settings">
             <div class="setting-row">
-              <label>启用 AI</label>
+              <label for="aiEnabled">启用 AI</label>
               <input type="checkbox" id="aiEnabled">
             </div>
             <div class="setting-row">
-              <label>API 方式</label>
+              <label for="aiProvider">API 方式</label>
               <select id="aiProvider">
                 <option value="anthropic">Anthropic 模式</option>
                 <option value="openai">OpenAI 模式</option>
               </select>
             </div>
             <div class="setting-row">
-              <label>请求地址</label>
+              <label for="aiBaseUrl">请求地址</label>
               <input type="text" id="aiBaseUrl" placeholder="https://api.anthropic.com">
             </div>
             <div class="setting-hint">填入 API 服务的域名即可，如 <code>https://api.anthropic.com</code> 或中转服务地址</div>
             <div class="setting-row">
-              <label>API Key</label>
+              <label for="apiKey">API Key</label>
               <input type="password" id="apiKey" placeholder="sk-...">
             </div>
             <div class="setting-row">
-              <label>模型</label>
+              <label for="aiModel">模型</label>
               <input type="text" id="aiModel" placeholder="claude-3-5-haiku-20240620">
             </div>
             <button id="testAiBtn" class="btn btn-outline btn-small">测试连接</button>
@@ -122,7 +221,16 @@
 
         <!-- 字段映射 -->
         <div class="settings-section">
-          <h4>📝 字段映射规则</h4>
+          <h4>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            字段映射规则
+          </h4>
           <div class="settings-info">
             <p>设置字段名到数据类型的映射规则</p>
             <p class="hint">例如: <code>工号 → uuid</code></p>
@@ -130,7 +238,7 @@
           <div id="mappingsList" class="mappings-list"></div>
           <div class="add-mapping">
             <input type="text" id="mappingField" placeholder="字段名">
-            <span>→</span>
+            <span class="arrow">→</span>
             <select id="mappingType">
               <option value="name">姓名</option>
               <option value="email">邮箱</option>

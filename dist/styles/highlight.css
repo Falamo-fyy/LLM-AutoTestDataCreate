@@ -1,19 +1,30 @@
 /* styles/highlight.css - 字段高亮样式 */
 
+/* CSS 变量用于一致性 */
+:root {
+  --autodata-highlight-primary: #10B981;
+  --autodata-highlight-secondary: #3B82F6;
+  --autodata-highlight-warning: #F59E0B;
+  --autodata-highlight-bg: rgba(16, 185, 129, 0.08);
+  --autodata-highlight-bg-hover: rgba(59, 130, 246, 0.12);
+  --autodata-highlight-bg-focus: rgba(245, 158, 11, 0.12);
+  --autodata-transition: 150ms ease;
+}
+
 .autodata-highlight {
-  outline: 2px solid #4CAF50 !important;
+  outline: 2px solid var(--autodata-highlight-primary) !important;
   outline-offset: 2px !important;
-  background-color: rgba(76, 175, 80, 0.1) !important;
-  transition: all 0.2s ease;
+  background-color: var(--autodata-highlight-bg) !important;
+  transition: all var(--autodata-transition);
 }
 
 .autodata-highlight:hover {
-  outline-color: #2196F3 !important;
-  background-color: rgba(33, 150, 243, 0.15) !important;
+  outline-color: var(--autodata-highlight-secondary) !important;
+  background-color: var(--autodata-highlight-bg-hover) !important;
 }
 
 .autodata-highlight:focus {
-  outline-color: #FF9800 !important;
+  outline-color: var(--autodata-highlight-warning) !important;
   outline-width: 3px !important;
-  background-color: rgba(255, 152, 0, 0.15) !important;
+  background-color: var(--autodata-highlight-bg-focus) !important;
 }
