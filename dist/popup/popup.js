@@ -75,6 +75,21 @@ document.addEventListener('DOMContentLoaded', () => {
     aiProgress:    document.getElementById('aiProgress'),
     progressStatus: document.getElementById('progressStatus'),
     progressWarning: document.getElementById('progressWarning'),
+    // 数据集相关
+    datasetLoader: document.getElementById('datasetLoader'),
+    datasetSelect: document.getElementById('datasetSelect'),
+    loadDatasetBtn: document.getElementById('loadDatasetBtn'),
+    saveDatasetBtn: document.getElementById('saveDatasetBtn'),
+    saveModal: document.getElementById('saveModal'),
+    datasetNameInput: document.getElementById('datasetNameInput'),
+    modalFieldCount: document.getElementById('modalFieldCount'),
+    cancelSaveBtn: document.getElementById('cancelSaveBtn'),
+    confirmSaveBtn: document.getElementById('confirmSaveBtn'),
+    datasetList: document.getElementById('datasetList'),
+    datasetEmptyState: document.getElementById('datasetEmptyState'),
+    exportDatasetsBtn: document.getElementById('exportDatasetsBtn'),
+    importDatasetsBtn: document.getElementById('importDatasetsBtn'),
+    importFileInput: document.getElementById('importFileInput'),
   };
 
   let currentFields = [];
@@ -84,6 +99,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let aiAnalysisResults = {};
   let aiGeneratedData = {};
   let aiGroups = [];
+  let savedDatasets = {};
+  let currentDataset = null;
+  let currentPageUrl = '';
 
   // 初始化
   init();
@@ -112,6 +130,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       updateProviderDefaults(currentConfig.aiProvider || 'anthropic', false);
     }
+    // 加载数据集列表
+    await loadDatasets();
+    renderDatasetList();
+    renderDatasetSelect();
   }
 
   const PROVIDER_DEFAULTS = {
@@ -152,12 +174,23 @@ document.addEventListener('DOMContentLoaded', () => {
   elements.scanBtn.addEventListener('click', async () => {
     setScanning(true);
 
+    // 获取页面上下文（包括 URL）
+    const pageContext = await sendTabMessage({ action: 'get-page-context' });
+    if (pageContext?.success) {
+      currentPageUrl = pageContext.url || '';
+    }
+
     const response = await sendTabMessage({ action: 'scan-fields' });
     if (response?.success) {
       currentFields = response.fields;
       aiAnalysisResults = {};
       aiGeneratedData = {};
       aiGroups = [];
+      currentDataset = null;
+
+      // 加载数据集并更新选择器
+      await loadDatasets();
+      renderDatasetSelect();
 
       if (currentConfig.aiEnabled) {
         showAiProgress();
@@ -230,6 +263,9 @@ document.addEventListener('DOMContentLoaded', () => {
       fieldOverrides = {};
       elements.fillBtn.classList.add('hidden');
       elements.applyBtn.classList.remove('hidden');
+      elements.saveDatasetBtn.classList.remove('hidden');
+      elements.saveDatasetBtn.disabled = false;
+      updateFooterLayout();
       await refreshFieldList();
     } else {
       showToast('填充失败', 'error');
@@ -274,6 +310,8 @@ document.addEventListener('DOMContentLoaded', () => {
     fieldOverrides = {};
     elements.applyBtn.classList.add('hidden');
     elements.fillBtn.classList.remove('hidden');
+    elements.saveDatasetBtn.classList.add('hidden');
+    updateFooterLayout();
     refreshFieldList();
   }
 
@@ -289,7 +327,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const response = await sendTabMessage({ action: 'clear-all' });
     if (response?.success) {
       showToast('已清空所有字段', 'success');
-      await elements.scanBtn.click();
+      aiAnalysisResults = {};
+      aiGeneratedData = {};
+      aiGroups = [];
+      currentDataset = null;
+      elements.saveDatasetBtn.classList.add('hidden');
+      exitEditMode();
+      await refreshFieldList();
     }
   });
 
@@ -298,6 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   elements.settingsBtn.addEventListener('click', () => {
+    renderDatasetList();
     elements.settingsPanel.classList.remove('hidden');
   });
   elements.closeSettings.addEventListener('click', () => {
@@ -305,6 +350,49 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   elements.closeSettingsBtn.addEventListener('click', () => {
     elements.settingsPanel.classList.add('hidden');
+  });
+
+  // 数据集相关事件
+  elements.saveDatasetBtn.addEventListener('click', () => {
+    showSaveModal();
+  });
+
+  elements.cancelSaveBtn.addEventListener('click', () => {
+    hideSaveModal();
+  });
+
+  elements.confirmSaveBtn.addEventListener('click', async () => {
+    await saveCurrentDataset();
+  });
+
+  elements.datasetNameInput.addEventListener('keypress', async (e) => {
+    if (e.key === 'Enter') {
+      await saveCurrentDataset();
+    }
+  });
+
+  elements.loadDatasetBtn.addEventListener('click', async () => {
+    const selectedId = elements.datasetSelect.value;
+    if (selectedId) {
+      await loadDataset(selectedId);
+    }
+  });
+
+  // 导入导出
+  elements.exportDatasetsBtn.addEventListener('click', () => {
+    exportDatasets();
+  });
+
+  elements.importDatasetsBtn.addEventListener('click', () => {
+    elements.importFileInput.click();
+  });
+
+  elements.importFileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      await importDatasets(file);
+      e.target.value = '';
+    }
   });
 
   elements.addMappingBtn.addEventListener('click', async () => {
@@ -628,5 +716,309 @@ document.addEventListener('DOMContentLoaded', () => {
     toastTimer = setTimeout(() => {
       elements.toast.classList.add('hidden');
     }, 2500);
+  }
+
+  // ========== Footer 布局管理 ==========
+
+  function updateFooterLayout() {
+    const footerBtns = [elements.scanBtn, elements.fillBtn, elements.applyBtn, elements.saveDatasetBtn, elements.clearBtn];
+    const visibleBtns = footerBtns.filter(btn => btn && !btn.classList.contains('hidden'));
+
+    // 移除所有布局类
+    footerBtns.forEach(btn => {
+      if (btn) btn.classList.remove('btn-wrap-2x2');
+    });
+
+    // 4个或更多按钮时使用 2x2 网格
+    if (visibleBtns.length >= 4) {
+      visibleBtns.forEach(btn => btn.classList.add('btn-wrap-2x2'));
+    }
+  }
+
+  // ========== 数据集管理函数 ==========
+
+  async function loadDatasets() {
+    const response = await sendMessage({ action: 'get-datasets' });
+    if (response?.success) {
+      savedDatasets = response.datasets || {};
+    }
+  }
+
+  function filterDatasetsByUrl(datasets, currentUrl) {
+    if (!currentUrl) return Object.values(datasets).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+    const urlObj = new URL(currentUrl);
+    const currentDomain = urlObj.hostname;
+    const currentPath = urlObj.pathname;
+
+    const sorted = Object.values(datasets).map(ds => {
+      let score = 0;
+      if (ds.pageUrl) {
+        try {
+          const dsUrl = new URL(ds.pageUrl);
+          if (dsUrl.hostname === currentDomain) score += 2;
+          if (dsUrl.pathname === currentPath) score += 3;
+          else if (currentPath.startsWith(dsUrl.pathname.replace(/\/[^/]*$/, ''))) score += 1;
+        } catch (e) {
+          if (ds.pageUrl.includes(currentDomain)) score += 1;
+        }
+      }
+      return { ...ds, matchScore: score };
+    });
+
+    return sorted.sort((a, b) => {
+      if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
+      return new Date(b.updatedAt) - new Date(a.updatedAt);
+    });
+  }
+
+  function renderDatasetSelect() {
+    const datasets = filterDatasetsByUrl(savedDatasets, currentPageUrl);
+    // 只显示 URL 匹配的数据集
+    const matchedDatasets = datasets.filter(ds => ds.matchScore > 0);
+
+    elements.datasetSelect.innerHTML = '<option value="">选择数据集...</option>' +
+      matchedDatasets.map(ds => {
+        return `<option value="${ds.id}">${escapeHtml(ds.name)} (${ds.fieldCount})</option>`;
+      }).join('');
+
+    if (matchedDatasets.length > 0) {
+      elements.datasetLoader.classList.remove('hidden');
+    } else {
+      elements.datasetLoader.classList.add('hidden');
+    }
+  }
+
+  function renderDatasetList() {
+    const datasets = Object.values(savedDatasets).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+    if (datasets.length === 0) {
+      elements.datasetList.innerHTML = '';
+      elements.datasetEmptyState.classList.remove('hidden');
+      return;
+    }
+
+    elements.datasetEmptyState.classList.add('hidden');
+    elements.datasetList.innerHTML = datasets.map(ds => `
+      <div class="dataset-item" data-id="${ds.id}">
+        <div class="dataset-info">
+          <div class="dataset-name" title="${escapeHtml(ds.name)}">${escapeHtml(ds.name)}</div>
+          <div class="dataset-meta">${ds.fieldCount} 个字段 · ${formatDate(ds.updatedAt)}</div>
+        </div>
+        <div class="dataset-actions">
+          <button class="icon-btn-small delete" data-id="${ds.id}" title="删除" aria-label="删除">
+            ${ICONS.close}
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    elements.datasetList.querySelectorAll('.icon-btn-small.delete').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        await deleteDataset(id);
+      });
+    });
+  }
+
+  function formatDate(isoString) {
+    const date = new Date(isoString);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${month}/${day}`;
+  }
+
+  function showSaveModal() {
+    const filledCount = currentFields.filter(f => f.value).length;
+    elements.modalFieldCount.textContent = filledCount;
+    elements.datasetNameInput.value = '';
+    elements.saveModal.classList.remove('hidden');
+    elements.datasetNameInput.focus();
+  }
+
+  function hideSaveModal() {
+    elements.saveModal.classList.add('hidden');
+  }
+
+  async function saveCurrentDataset() {
+    const name = elements.datasetNameInput.value.trim();
+    if (!name) {
+      showToast('请输入数据集名称', 'error');
+      return;
+    }
+
+    const filledFields = currentFields.filter(f => f.value);
+    if (filledFields.length === 0) {
+      showToast('没有可保存的数据', 'error');
+      hideSaveModal();
+      return;
+    }
+
+    const fields = filledFields.map(f => ({
+      key: f.key,
+      label: f.label || f.name || f.placeholder || f.id || '',
+      type: f.inferredType || f.type,
+      value: f.value,
+    }));
+
+    const response = await sendMessage({
+      action: 'save-dataset',
+      name,
+      locale: getSelectedLocale(),
+      pageUrl: currentPageUrl,
+      fields,
+      source: Object.keys(aiAnalysisResults).length > 0 ? 'ai' : 'local',
+    });
+
+    if (response?.success) {
+      await loadDatasets();
+      renderDatasetSelect();
+      renderDatasetList();
+      showToast(`已保存 "${name}" (${filledFields.length} 个字段)`, 'success');
+    } else {
+      showToast('保存失败', 'error');
+    }
+
+    hideSaveModal();
+  }
+
+  async function loadDataset(id) {
+    const dataset = savedDatasets[id];
+    if (!dataset) {
+      showToast('数据集不存在', 'error');
+      return;
+    }
+
+    const response = await sendTabMessage({
+      action: 'fill-with-dataset',
+      dataset,
+    });
+
+    if (response?.success) {
+      const filled = response.results.filter(r => r.success).length;
+      showToast(`已加载 "${dataset.name}" (${filled} 个字段)`, 'success');
+      currentDataset = dataset;
+
+      // 更新 currentFields 和显示
+      const fieldResponse = await sendTabMessage({ action: 'scan-fields' });
+      if (fieldResponse?.success) {
+        currentFields = fieldResponse.fields;
+        updateFieldList(currentFields);
+      }
+
+      // 进入编辑模式
+      isEditing = true;
+      fieldOverrides = {};
+      elements.fillBtn.classList.add('hidden');
+      elements.applyBtn.classList.remove('hidden');
+
+      // 更新数据集的 updatedAt
+      savedDatasets[id].updatedAt = new Date().toISOString();
+      await sendMessage({ action: 'rename-dataset', id, name: dataset.name });
+    } else {
+      showToast('加载失败', 'error');
+    }
+  }
+
+  async function deleteDataset(id) {
+    const dataset = savedDatasets[id];
+    if (!dataset) return;
+
+    const response = await sendMessage({ action: 'delete-dataset', id });
+    if (response?.success) {
+      await loadDatasets();
+      renderDatasetSelect();
+      renderDatasetList();
+      showToast(`已删除 "${dataset.name}"`, 'success');
+    } else {
+      showToast('删除失败', 'error');
+    }
+  }
+
+  function exportDatasets() {
+    const datasets = Object.values(savedDatasets);
+
+    if (datasets.length === 0) {
+      showToast('没有可导出的数据集', 'error');
+      return;
+    }
+
+    const exportData = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      count: datasets.length,
+      datasets: datasets,
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `autodata-datasets-${formatDateForFile()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast(`已导出 ${datasets.length} 个数据集`, 'success');
+  }
+
+  async function importDatasets(file) {
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      if (!data.datasets || !Array.isArray(data.datasets)) {
+        showToast('文件格式不正确', 'error');
+        return;
+      }
+
+      let imported = 0;
+      let skipped = 0;
+
+      for (const ds of data.datasets) {
+        if (!ds.id || !ds.name || !ds.fields) {
+          skipped++;
+          continue;
+        }
+
+        const id = ds.id;
+        const response = await sendMessage({
+          action: 'save-dataset',
+          name: ds.name,
+          locale: ds.locale || 'zh_CN',
+          pageUrl: ds.pageUrl || '',
+          fields: ds.fields,
+          source: ds.source || 'local',
+        });
+
+        if (response?.success) {
+          imported++;
+        } else {
+          skipped++;
+        }
+      }
+
+      await loadDatasets();
+      renderDatasetSelect();
+      renderDatasetList();
+
+      if (imported > 0) {
+        showToast(`成功导入 ${imported} 个数据集${skipped > 0 ? `，跳过 ${skipped} 个` : ''}`, 'success');
+      } else {
+        showToast('导入失败，请检查文件格式', 'error');
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      showToast('文件读取失败', 'error');
+    }
+  }
+
+  function formatDateForFile() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
   }
 });

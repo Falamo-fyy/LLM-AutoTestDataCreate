@@ -31,6 +31,24 @@ async function saveConfig(config) {
   return config;
 }
 
+// ========== 数据集管理 ==========
+
+async function getDatasets() {
+  const stored = await chrome.storage.local.get('datasets');
+  return stored.datasets || {};
+}
+
+async function saveDatasets(datasets) {
+  await chrome.storage.local.set({ datasets });
+}
+
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
 // AI 组合分析+数据生成系统提示词
 // 同时完成：字段类型分析、关联关系识别、一致性测试数据生成
 const FIELD_TYPES_SYSTEM_PROMPT = `<system>
@@ -400,6 +418,54 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       } catch (error) {
         return { success: false, error: error.message };
       }
+    },
+
+    'save-dataset': async (msg) => {
+      const datasets = await getDatasets();
+      // 导入时使用原有 ID，否则生成新 ID
+      const id = msg.id || generateUUID();
+      const now = new Date().toISOString();
+      // 导入时保留创建时间
+      const dataset = {
+        id,
+        name: msg.name,
+        createdAt: msg.createdAt || now,
+        updatedAt: now,
+        locale: msg.locale || 'zh_CN',
+        pageUrl: msg.pageUrl || '',
+        fields: msg.fields || [],
+        fieldCount: (msg.fields || []).length,
+        source: msg.source || 'local',
+      };
+      datasets[id] = dataset;
+      await saveDatasets(datasets);
+      return { success: true, dataset };
+    },
+
+    'get-datasets': async () => {
+      const datasets = await getDatasets();
+      return { success: true, datasets };
+    },
+
+    'delete-dataset': async (msg) => {
+      const datasets = await getDatasets();
+      if (datasets[msg.id]) {
+        delete datasets[msg.id];
+        await saveDatasets(datasets);
+        return { success: true };
+      }
+      return { success: false, error: '数据集不存在' };
+    },
+
+    'rename-dataset': async (msg) => {
+      const datasets = await getDatasets();
+      if (datasets[msg.id]) {
+        datasets[msg.id].name = msg.name;
+        datasets[msg.id].updatedAt = new Date().toISOString();
+        await saveDatasets(datasets);
+        return { success: true, dataset: datasets[msg.id] };
+      }
+      return { success: false, error: '数据集不存在' };
     },
   };
 

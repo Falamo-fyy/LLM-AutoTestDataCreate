@@ -1352,6 +1352,28 @@ function handleMessage(message, sender, sendResponse) {
       };
     },
 
+    'fill-with-dataset': async (msg) => {
+      const { dataset } = msg;
+      if (!dataset || !dataset.fields) {
+        return { success: false, error: 'Invalid dataset' };
+      }
+      try {
+        const results = [];
+        for (const savedField of dataset.fields) {
+          const field = currentFields.find(f => f.key === savedField.key);
+          if (field && savedField.value !== undefined && savedField.value !== null) {
+            const success = await self.fillField(field, savedField.value);
+            results.push({ field: field.key, success, value: savedField.value });
+          }
+          await delay(100);
+        }
+        return { success: true, results };
+      } catch (error) {
+        console.error('[AutoData] Dataset fill error:', error);
+        return { success: false, error: error.message };
+      }
+    },
+
     'get-page-context': async () => {
       // 获取页面上下文信息，帮助 AI 更好地理解表单
       return {

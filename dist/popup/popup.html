@@ -74,6 +74,14 @@
       </label>
     </div>
 
+    <!-- 数据集加载器 -->
+    <div id="datasetLoader" class="dataset-loader hidden">
+      <select id="datasetSelect">
+        <option value="">选择数据集...</option>
+      </select>
+      <button id="loadDatasetBtn" class="btn btn-small">加载</button>
+    </div>
+
     <!-- 主内容区 -->
     <main class="main-content">
       <!-- 扫描状态 -->
@@ -144,6 +152,14 @@
           <line x1="12" y1="22.08" x2="12" y2="12"/>
         </svg>
         随机填充
+      </button>
+      <button id="saveDatasetBtn" class="btn btn-secondary hidden" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        保存
       </button>
       <button id="applyBtn" class="btn btn-primary hidden">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -255,6 +271,44 @@
           </div>
         </div>
 
+        <!-- 数据集管理 -->
+        <div class="settings-section">
+          <h4>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+            数据集管理
+          </h4>
+          <div class="settings-info">
+            <p>已保存的数据集可直接加载复用</p>
+          </div>
+          <div id="datasetList" class="dataset-list"></div>
+          <div id="datasetEmptyState" class="empty-state">
+            <span>暂无保存的数据集</span>
+          </div>
+          <div class="dataset-actions-row">
+            <button id="exportDatasetsBtn" class="btn btn-outline btn-small">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              导出
+            </button>
+            <button id="importDatasetsBtn" class="btn btn-outline btn-small">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              导入
+            </button>
+            <input type="file" id="importFileInput" accept=".json" style="display: none;">
+          </div>
+        </div>
+
       </div>
       <div class="settings-actions">
         <button id="resetBtn" class="btn btn-outline btn-small">恢复默认</button>
@@ -264,6 +318,21 @@
 
     <!-- Toast 通知 -->
     <div id="toast" class="toast hidden"></div>
+
+    <!-- 保存数据集弹窗 -->
+    <div id="saveModal" class="modal hidden">
+      <div class="modal-content">
+        <h3>保存数据集</h3>
+        <div class="modal-info">
+          <span>当前数据集将保存 <strong id="modalFieldCount">0</strong> 个字段</span>
+        </div>
+        <input type="text" id="datasetNameInput" class="modal-input" placeholder="输入数据集名称" maxlength="50">
+        <div class="modal-actions">
+          <button id="cancelSaveBtn" class="btn btn-outline btn-small">取消</button>
+          <button id="confirmSaveBtn" class="btn btn-primary btn-small">保存</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="popup.js"></script>
