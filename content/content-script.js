@@ -48,9 +48,12 @@ function handleMessage(message, sender, sendResponse) {
     },
 
     'fill-all': async (msg) => {
-      const { locale, customMappings } = msg;
+      const { locale, customMappings, selectedKeys } = msg;
       try {
-        const results = await self.fillAllFields(currentFields, locale, customMappings || {});
+        const fields = selectedKeys
+          ? currentFields.filter(f => selectedKeys.includes(f.key))
+          : currentFields;
+        const results = await self.fillAllFields(fields, locale, customMappings || {});
         return { success: true, results };
       } catch (error) {
         console.error('[AutoData] Fill error:', error);
@@ -70,11 +73,26 @@ function handleMessage(message, sender, sendResponse) {
     'toggle-highlight': async (msg) => {
       highlightsEnabled = msg.enabled;
       if (highlightsEnabled) {
-        highlightFields(currentFields);
+        const keys = msg.selectedKeys;
+        const targetFields = keys
+          ? currentFields.filter(f => keys.includes(f.key))
+          : currentFields;
+        highlightFields(targetFields);
       } else {
         removeHighlights();
       }
       return { success: true, enabled: highlightsEnabled };
+    },
+
+    'update-highlights': async (msg) => {
+      if (!highlightsEnabled) return { success: true };
+      removeHighlights();
+      const keys = msg.selectedKeys;
+      if (keys && keys.length > 0) {
+        const targetFields = currentFields.filter(f => keys.includes(f.key));
+        highlightFields(targetFields);
+      }
+      return { success: true };
     },
 
     'get-field-detail': async (msg) => {
@@ -97,10 +115,13 @@ function handleMessage(message, sender, sendResponse) {
     },
 
     'fill-with-types': async (msg) => {
-      const { locale, typeOverrides, customMappings, aiResults, aiData, aiGroups } = msg;
+      const { locale, typeOverrides, customMappings, aiResults, aiData, aiGroups, selectedKeys } = msg;
       try {
+        const fields = selectedKeys
+          ? currentFields.filter(f => selectedKeys.includes(f.key))
+          : currentFields;
         const results = [];
-        for (const field of currentFields) {
+        for (const field of fields) {
           let value;
           let usedType = field.inferredType;
 
@@ -192,6 +213,67 @@ function handleMessage(message, sender, sendResponse) {
         description: document.querySelector('meta[name="description"]')?.content || '',
       };
     },
+
+    'get-current-field-values': async () => {
+      const fields = currentFields.map(field => {
+        const el = field.element;
+        let value = '';
+        if (el) {
+          if (el.tagName === 'INPUT') {
+            if (el.type === 'checkbox' || el.type === 'radio') {
+              value = el.checked ? 'true' : 'false';
+            } else {
+              value = el.value;
+            }
+          } else if (el.tagName === 'SELECT') {
+            value = el.value;
+          } else {
+            value = el.value || el.textContent || '';
+          }
+        }
+        return {
+          key: field.key,
+          name: field.name,
+          id: field.id,
+          placeholder: field.placeholder,
+          label: field.label,
+          tagName: field.tagName,
+          type: field.type,
+          value: value,
+        };
+      });
+      return { success: true, fields };
+    },
+
+    'restore-last-fill': async (msg) => {
+      const { storedData, currentFields: scannedFields, selectedKeys } = msg;
+      const { fields: storedFields } = storedData;
+
+      const matchResults = matchFieldsWithLastData(scannedFields, storedFields);
+
+      const fillResults = [];
+      const allMatched = [...matchResults.matched, ...matchResults.partiallyMatched];
+
+      for (const match of allMatched) {
+        const { current, value } = match;
+        if (value !== undefined && value !== null) {
+          // 检查是否在选中列表中
+          if (selectedKeys && !selectedKeys.includes(current.key)) continue;
+          const field = scannedFields.find(f => f.key === current.key);
+          if (field) {
+            const success = await self.fillField(field, value);
+            fillResults.push({ key: current.key, success, value });
+          }
+        }
+        await delay(50);
+      }
+
+      return {
+        success: true,
+        matchResults,
+        fillResults,
+      };
+    },
   };
 
   const handler = handlers[message.action];
@@ -248,6 +330,94 @@ function debounce(func, wait) {
     clearTimeout(timeout);
     timeout = setTimeout(() => func.apply(this, args), wait);
   };
+}
+
+// 字段匹配核心函数
+function matchFieldsWithLastData(currentFields, storedFields) {
+  const generateSignature = (field) => {
+    return [
+      field.name || '',
+      field.id || '',
+      field.placeholder || '',
+      field.label || '',
+      field.tagName || '',
+      field.type || '',
+    ].join('|').toLowerCase();
+  };
+
+  const matchResults = {
+    matched: [],
+    partiallyMatched: [],
+    newFields: [],
+    removedFields: [],
+  };
+
+  const storedSignatures = new Map();
+  storedFields.forEach((field, idx) => {
+    const sig = generateSignature(field);
+    if (!storedSignatures.has(sig)) {
+      storedSignatures.set(sig, []);
+    }
+    storedSignatures.get(sig).push({ field, idx });
+  });
+
+  const usedIndices = new Set();
+
+  currentFields.forEach(current => {
+    const sig = generateSignature(current);
+    const storedList = storedSignatures.get(sig);
+
+    if (storedList && storedList.length > 0) {
+      const available = storedList.find(item => !usedIndices.has(item.idx));
+      if (available) {
+        usedIndices.add(available.idx);
+        matchResults.matched.push({
+          current,
+          stored: available.field,
+          value: available.field.value,
+        });
+        return;
+      }
+    }
+
+    // 部分匹配：按优先级 name > id > label
+    let partialFound = false;
+    const attrChecks = ['name', 'id', 'label'];
+
+    for (const attr of attrChecks) {
+      if (partialFound || !current[attr]) continue;
+      for (const [storedSig, storedArr] of storedSignatures) {
+        const available = storedArr.find(item =>
+          !usedIndices.has(item.idx) &&
+          item.field[attr] &&
+          item.field[attr].toLowerCase() === current[attr].toLowerCase()
+        );
+        if (available) {
+          usedIndices.add(available.idx);
+          matchResults.partiallyMatched.push({
+            current,
+            stored: available.field,
+            value: available.field.value,
+          });
+          partialFound = true;
+          break;
+        }
+      }
+    }
+
+    if (!partialFound) {
+      matchResults.newFields.push(current);
+    }
+  });
+
+  // 找出被移除的字段
+  storedFields.forEach((stored, idx) => {
+    if (!usedIndices.has(idx)) {
+      matchResults.removedFields.push(stored);
+    }
+  });
+
+  return matchResults;
 }
 
 // 启动

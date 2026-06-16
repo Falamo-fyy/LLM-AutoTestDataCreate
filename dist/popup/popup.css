@@ -328,7 +328,8 @@ body {
   font-weight: 600;
 }
 
-.highlight-toggle {
+.highlight-toggle,
+.select-all-toggle {
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -337,14 +338,16 @@ body {
   color: var(--color-text-tertiary);
 }
 
-.highlight-toggle input {
+.highlight-toggle input,
+.select-all-toggle input {
   width: 16px;
   height: 16px;
   cursor: pointer;
   accent-color: var(--color-primary);
 }
 
-.highlight-toggle:has(input:focus-visible) {
+.highlight-toggle:has(input:focus-visible),
+.select-all-toggle:has(input:focus-visible) {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
@@ -375,6 +378,14 @@ body {
 .field-item:focus-within {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.field-checkbox {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--color-primary);
 }
 
 .field-icon {

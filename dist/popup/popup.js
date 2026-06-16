@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const elements = {
     scanBtn:       document.getElementById('scanBtn'),
     fillBtn:       document.getElementById('fillBtn'),
+    restoreBtn:    document.getElementById('restoreBtn'),
     applyBtn:      document.getElementById('applyBtn'),
     clearBtn:      document.getElementById('clearBtn'),
     settingsBtn:   document.getElementById('settingsBtn'),
@@ -57,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fieldCount:    document.getElementById('fieldCount'),
     noFields:      document.getElementById('noFields'),
     highlightToggle: document.getElementById('highlightToggle'),
+    selectAllToggle: document.getElementById('selectAllToggle'),
     mappingField:  document.getElementById('mappingField'),
     mappingType:   document.getElementById('mappingType'),
     addMappingBtn: document.getElementById('addMappingBtn'),
@@ -102,6 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let savedDatasets = {};
   let currentDataset = null;
   let currentPageUrl = '';
+  let selectedFields = new Set();
+  let lastFillData = null;
 
   // 初始化
   init();
@@ -134,6 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
     await loadDatasets();
     renderDatasetList();
     renderDatasetSelect();
+    await checkRestoreData();
   }
 
   const PROVIDER_DEFAULTS = {
@@ -152,11 +157,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  async function checkRestoreData() {
+    const response = await sendMessage({ action: 'get-last-fill-data' });
+    if (response?.success && response.data) {
+      lastFillData = response.data;
+      const sevenDays = 7 * 24 * 60 * 60 * 1000;
+      const isExpired = Date.now() - response.data.timestamp > sevenDays;
+      elements.restoreBtn.disabled = isExpired;
+      if (isExpired) {
+        elements.restoreBtn.title = '数据已过期（超过7天）';
+      } else {
+        const timeStr = new Date(response.data.timestamp).toLocaleString();
+        elements.restoreBtn.title = `上次填充: ${timeStr}`;
+      }
+    } else {
+      lastFillData = null;
+      elements.restoreBtn.disabled = true;
+      elements.restoreBtn.title = '暂无历史数据';
+    }
+  }
+
+  async function saveLastFillData() {
+    const response = await sendTabMessage({ action: 'get-current-field-values' });
+    if (response?.success && response.fields && response.fields.length > 0) {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      await sendMessage({
+        action: 'save-last-fill-data',
+        data: {
+          url: tab.url,
+          timestamp: Date.now(),
+          fields: response.fields,
+        }
+      });
+      await checkRestoreData();
+    }
+  }
+
   // === 事件绑定 ===
 
   function setScanning(scanning) {
     elements.scanBtn.disabled = scanning;
     elements.fillBtn.disabled = scanning;
+    elements.restoreBtn.disabled = scanning || !lastFillData;
     elements.clearBtn.disabled = scanning;
     elements.settingsBtn.disabled = scanning;
     if (scanning) {
@@ -187,6 +229,8 @@ document.addEventListener('DOMContentLoaded', () => {
       aiGeneratedData = {};
       aiGroups = [];
       currentDataset = null;
+      selectedFields = new Set(response.fields.map(f => f.key));
+      elements.selectAllToggle.checked = true;
 
       // 加载数据集并更新选择器
       await loadDatasets();
@@ -239,21 +283,21 @@ document.addEventListener('DOMContentLoaded', () => {
   elements.fillBtn.addEventListener('click', async () => {
     elements.fillBtn.disabled = true;
     const locale = getSelectedLocale();
+    const selectedKeys = [...selectedFields];
 
+    const baseMsg = { locale, selectedKeys, customMappings: currentConfig.customMappings || {} };
     const response = Object.keys(aiAnalysisResults).length > 0
       ? await sendTabMessage({
+          ...baseMsg,
           action: 'fill-with-types',
-          locale,
           typeOverrides: {},
-          customMappings: currentConfig.customMappings || {},
           aiResults: aiAnalysisResults,
           aiData: aiGeneratedData,
           aiGroups: aiGroups,
         })
       : await sendTabMessage({
+          ...baseMsg,
           action: 'fill-all',
-          locale,
-          customMappings: currentConfig.customMappings || {},
         });
 
     if (response?.success) {
@@ -266,11 +310,61 @@ document.addEventListener('DOMContentLoaded', () => {
       elements.saveDatasetBtn.classList.remove('hidden');
       elements.saveDatasetBtn.disabled = false;
       updateFooterLayout();
+      await saveLastFillData();
       await refreshFieldList();
     } else {
       showToast('填充失败', 'error');
     }
     elements.fillBtn.disabled = false;
+  });
+
+  elements.restoreBtn.addEventListener('click', async () => {
+    if (!lastFillData) {
+      showToast('没有可复现的数据', 'error');
+      return;
+    }
+
+    elements.restoreBtn.disabled = true;
+
+    // 1. 先扫描当前页面字段
+    const scanResponse = await sendTabMessage({ action: 'scan-fields' });
+
+    if (!scanResponse?.success) {
+      showToast('扫描页面失败', 'error');
+      elements.restoreBtn.disabled = false;
+      return;
+    }
+
+    const scannedFields = scanResponse.fields;
+    const selectedKeys = [...selectedFields];
+
+    // 2. 执行匹配和填充
+    const fillResponse = await sendTabMessage({
+      action: 'restore-last-fill',
+      storedData: lastFillData,
+      currentFields: scannedFields,
+      selectedKeys,
+    });
+
+    if (fillResponse?.success) {
+      const { matched, partiallyMatched, newFields, removedFields } = fillResponse.matchResults;
+      const totalMatched = (matched?.length || 0) + (partiallyMatched?.length || 0);
+
+      if ((newFields?.length || 0) > 0 || (removedFields?.length || 0) > 0) {
+        let msg = `${totalMatched}/${scannedFields.length} 字段已匹配`;
+        if ((newFields?.length || 0) > 0) msg += `，${newFields.length} 个新字段`;
+        if ((removedFields?.length || 0) > 0) msg += `，${removedFields.length} 个字段已移除`;
+        showToast(msg, 'warning');
+      } else {
+        showToast(`已复现 ${totalMatched} 个字段`, 'success');
+      }
+
+      await refreshFieldList();
+    } else {
+      showToast('复现失败', 'error');
+    }
+
+    elements.restoreBtn.disabled = false;
   });
 
   elements.applyBtn.addEventListener('click', async () => {
@@ -285,9 +379,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (Object.keys(typeOverrides).length > 0 || Object.keys(fieldOverrides).length > 0) {
       const locale = getSelectedLocale();
+      const selectedKeys = [...selectedFields];
       const response = await sendTabMessage({
         action: 'fill-with-types',
         locale,
+        selectedKeys,
         typeOverrides,
         customMappings: currentConfig.customMappings || {},
         aiResults: aiAnalysisResults,
@@ -337,8 +433,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // 同步页面高亮到当前选中状态
+  function syncHighlights() {
+    if (elements.highlightToggle.checked) {
+      sendTabMessage({ action: 'update-highlights', selectedKeys: [...selectedFields] });
+    }
+  }
+
   elements.highlightToggle.addEventListener('change', async (e) => {
-    await sendTabMessage({ action: 'toggle-highlight', enabled: e.target.checked });
+    const enabled = e.target.checked;
+    await sendTabMessage({
+      action: 'toggle-highlight',
+      enabled,
+      selectedKeys: enabled ? [...selectedFields] : undefined,
+    });
+  });
+
+  elements.selectAllToggle.addEventListener('change', (e) => {
+    const checked = e.target.checked;
+    if (checked) {
+      currentFields.forEach(f => selectedFields.add(f.key));
+    } else {
+      selectedFields.clear();
+    }
+    // 更新所有字段复选框可视状态
+    elements.fieldsList.querySelectorAll('.field-checkbox').forEach(cb => {
+      cb.checked = checked;
+    });
+    syncHighlights();
+  });
+
+  // 字段复选框点击事件委托
+  elements.fieldsList.addEventListener('change', (e) => {
+    if (e.target.classList.contains('field-checkbox')) {
+      const key = e.target.dataset.key;
+      if (e.target.checked) {
+        selectedFields.add(key);
+      } else {
+        selectedFields.delete(key);
+      }
+      elements.selectAllToggle.checked = selectedFields.size === currentFields.length;
+      syncHighlights();
+    }
   });
 
   elements.settingsBtn.addEventListener('click', () => {
@@ -530,8 +666,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const hasAiAnalysis = aiInfo && aiInfo.type && aiInfo.type !== field.inferredType;
       const confidenceClass = aiInfo?.confidence >= 0.8 ? 'high' : aiInfo?.confidence >= 0.5 ? 'medium' : 'low';
 
+      const isChecked = selectedFields.has(field.key) ? 'checked' : '';
+
       return `
         <div class="field-item ${showEdit ? 'editable' : ''} ${hasAiAnalysis ? 'has-ai' : ''}" data-key="${field.key}">
+          <input type="checkbox" class="field-checkbox" data-key="${field.key}" ${isChecked} title="选择/取消该字段">
           <span class="field-icon">${icon}</span>
           <div class="field-info">
             <div class="field-label" title="${escapeHtml(label)}">${escapeHtml(label)}</div>

@@ -97,6 +97,10 @@
       <div id="fieldsContainer" class="fields-container hidden">
         <div class="fields-header">
           <span class="fields-count">识别到 <strong id="fieldCount">0</strong> 个字段</span>
+          <label class="select-all-toggle">
+            <input type="checkbox" id="selectAllToggle" checked>
+            <span>全选</span>
+          </label>
           <label class="highlight-toggle">
             <input type="checkbox" id="highlightToggle">
             <span>高亮</span>
@@ -152,6 +156,13 @@
           <line x1="12" y1="22.08" x2="12" y2="12"/>
         </svg>
         随机填充
+      </button>
+      <button id="restoreBtn" class="btn btn-secondary" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+        </svg>
+        复现上次
       </button>
       <button id="saveDatasetBtn" class="btn btn-secondary hidden" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

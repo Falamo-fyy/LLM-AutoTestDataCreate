@@ -470,6 +470,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       return { success: false, error: '数据集不存在' };
     },
+
+    'get-last-fill-data': async () => {
+      const result = await chrome.storage.local.get('lastFillData');
+      if (result.lastFillData) {
+        return { success: true, data: result.lastFillData };
+      }
+      return { success: false };
+    },
+
+    'save-last-fill-data': async (msg) => {
+      const { data } = msg;
+      await chrome.storage.local.set({ lastFillData: data });
+      return { success: true };
+    },
   };
 
   const handler = handlers[message.action];
@@ -482,9 +496,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
+async function cleanupExpiredData() {
+  const result = await chrome.storage.local.get('lastFillData');
+  if (result.lastFillData) {
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    if (Date.now() - result.lastFillData.timestamp > sevenDays) {
+      await chrome.storage.local.remove('lastFillData');
+      console.log('[AutoData] Cleaned up expired lastFillData');
+    }
+  }
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
   const config = await getConfig();
   console.log('[AutoData] Extension installed, config:', config);
+  await cleanupExpiredData();
 });
 
 })();
